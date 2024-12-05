@@ -1,9 +1,10 @@
-### **Part 2: Enhancing the Resume Builder**
+### **Updated Part 2: Enhancing the Resume Builder**
 
 In this phase, we will:
 1. Enhance the design of the form using **Tailwind CSS** (via CDN for simplicity).
-2. Use the `/` route as a **home page** to display a list of saved resumes.
+2. Use the `/` route as a **home page** to display saved resumes in a **card-based layout**.
 3. Add a **menu** to navigate between building resumes and viewing saved resumes.
+4. Create a Canva-style detailed resume page for viewing individual resumes.
 
 ---
 
@@ -53,43 +54,31 @@ In this phase, we will:
    @app.route('/')
    def index():
        cur = mysql.connection.cursor()
-       cur.execute("SELECT id, name, email, phone FROM resumes")
+       cur.execute("SELECT id, name FROM resumes")
        resumes = cur.fetchall()
        cur.close()
        return render_template('index.html', resumes=resumes)
    ```
 
 2. **Create the `index.html` Template**:
-   This template will display a list of saved resumes.
+   This template will display resumes in a **card-based layout**.
    ```html
    {% extends 'base.html' %}
    {% block content %}
        <h1 class="text-3xl font-bold mb-6">Saved Resumes</h1>
-       {% if resumes %}
-           <table class="table-auto w-full border-collapse border border-gray-300">
-               <thead class="bg-gray-200">
-                   <tr>
-                       <th class="border border-gray-300 px-4 py-2">Name</th>
-                       <th class="border border-gray-300 px-4 py-2">Email</th>
-                       <th class="border border-gray-300 px-4 py-2">Phone</th>
-                       <th class="border border-gray-300 px-4 py-2">Actions</th>
-                   </tr>
-               </thead>
-               <tbody>
-                   {% for resume in resumes %}
-                       <tr>
-                           <td class="border border-gray-300 px-4 py-2">{{ resume[1] }}</td>
-                           <td class="border border-gray-300 px-4 py-2">{{ resume[2] }}</td>
-                           <td class="border border-gray-300 px-4 py-2">{{ resume[3] }}</td>
-                           <td class="border border-gray-300 px-4 py-2">
-                               <a href="/resume/{{ resume[0] }}" class="text-blue-500 hover:underline">View</a>
-                           </td>
-                       </tr>
-                   {% endfor %}
-               </tbody>
-           </table>
-       {% else %}
-           <p class="text-gray-600">No resumes found. Click "Build Resume" to get started!</p>
+       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+           {% for resume in resumes %}
+           <div class="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow">
+               <h2 class="text-xl font-bold mb-2">{{ resume[1] }}</h2>
+               <p class="text-gray-500 mb-4">Click below to view this resume.</p>
+               <a href="/resume/{{ resume[0] }}" class="block bg-blue-500 hover:bg-blue-700 text-white text-center py-2 rounded-md transition">
+                   View Resume
+               </a>
+           </div>
+           {% endfor %}
+       </div>
+       {% if not resumes %}
+       <p class="text-gray-600 text-center mt-4">No resumes found. Click "Build Resume" to get started!</p>
        {% endif %}
    {% endblock %}
    ```
@@ -139,24 +128,80 @@ In this phase, we will:
 
 ---
 
-## **Step 4: Test the Application**
+## **Step 4: Add Detailed Resume Page**
+
+1. Add a new route in **`routes.py`**:
+   ```python
+   @app.route('/resume/<int:id>')
+   def view_resume(id):
+       cur = mysql.connection.cursor()
+       cur.execute("SELECT name, email, phone, skills, experience, education FROM resumes WHERE id = %s", (id,))
+       resume = cur.fetchone()
+       cur.close()
+       return render_template('view_resume.html', resume=resume)
+   ```
+
+2. Create **`view_resume.html`** with a Canva-inspired layout:
+   ```html
+   {% extends 'base.html' %}
+   {% block content %}
+   <div class="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-8">
+       <div class="flex items-center border-b pb-6">
+           <div class="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 text-xl font-bold">
+               Photo
+           </div>
+           <div class="ml-6">
+               <h1 class="text-4xl font-bold text-gray-800">{{ resume[0] }}</h1>
+               <p class="text-gray-600 text-lg">{{ resume[1] }}</p>
+               <p class="text-gray-600 text-lg">{{ resume[2] }}</p>
+           </div>
+       </div>
+       <div class="mt-8">
+           <h2 class="text-2xl font-semibold text-gray-800 border-b pb-2 mb-4">Skills</h2>
+           <ul class="list-disc list-inside text-gray-700">
+               {% for skill in resume[3].split(',') %}
+               <li>{{ skill.strip() }}</li>
+               {% endfor %}
+           </ul>
+       </div>
+       <div class="mt-8">
+           <h2 class="text-2xl font-semibold text-gray-800 border-b pb-2 mb-4">Experience</h2>
+           <p class="text-gray-700 whitespace-pre-line">{{ resume[4] }}</p>
+       </div>
+       <div class="mt-8">
+           <h2 class="text-2xl font-semibold text-gray-800 border-b pb-2 mb-4">Education</h2>
+           <p class="text-gray-700 whitespace-pre-line">{{ resume[5] }}</p>
+       </div>
+   </div>
+   {% endblock %}
+   ```
+
+---
+
+## **Step 5: Test the Application**
 
 1. Start the Flask app:
    ```bash
    python run.py
    ```
 
-2. Open your browser and navigate to:
+2. Open the browser and navigate to:
    - **Home Page**: `http://127.0.0.1:5000/`
-   - **Build Resume Page**: `http://127.0.0.1:5000/add`
+   - **Build Resume Page**:
+
+ `http://127.0.0.1:5000/add`
+   - **View Resume Page**: Click any card on the home page.
 
 ---
 
 ## **Expected Outcome**
-- The **home page (`/`)** now displays a list of saved resumes with a clean design.
-- The **form page (`/add`)** uses Tailwind CSS for a modern, user-friendly design.
-- Users can navigate between building and viewing resumes via the **menu** in the header.
+- **Home Page**:
+  - Resumes are displayed in a **card-based layout**.
+  - Clicking "View Resume" opens the detailed resume page.
+
+- **Detailed Resume Page**:
+  - A Canva-inspired resume layout with sections for the photo, contact info, skills, experience, and education.
 
 ---
 
-Let me know when you're ready for the next phase, such as **viewing individual resumes in detail** or **adding edit/delete functionality**!
+Let me know if you need further updates!
