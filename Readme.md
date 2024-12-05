@@ -220,5 +220,4 @@ You should see a form where you can input resume details. After submitting the f
 - The page will reload, ready for another input.
 
 ---
-
-Let me know when you’re ready to move to the next phase!
+ 
